@@ -2,32 +2,49 @@ from kivymd.app import MDApp
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty, DictProperty
+from kivymd.uix.fitimage import FitImage
+from kivy.metrics import dp
+from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.label import MDLabel
+from kivymd.uix.card import MDCard
+from kivymd.uix.boxlayout import MDBoxLayout
 
 # Временные данные для демонстрации
 temp_users = {
+    'student': {
+        'password': 'student123',
+        'email': 'student@university.com',
+        'name': 'Иванов Иван',
+        'group': 'ПИ-21-1',
+        'phone': '+79991234567',
+        'birthDate': '01.01.2000',
+        'gender': 'Мужской',
+        'grades': {'Математика': 4, 'Физика': 3}
+    },
+    'teacher': {
+        'password': 'teacher123',
+        'email': 'teacher@university.com',
+        'name': 'Петрова Мария',
+        'department': 'Кафедра информатики',
+        'phone': '+79998765432',
+        'birthDate': '15.05.1985',
+        'gender': 'Женский',
+        'subjects': ['Математика', 'Программирование']
+    },
     'admin': {
         'password': 'admin123',
         'email': 'admin@university.com',
         'name': 'Администратор',
         'group': 'ADM-01',
         'grades': {'Математика': 5, 'Физика': 5}
-    },
-    'student': {
-        'password': 'student123',
-        'email': 'student@university.com',
-        'name': 'Иванов Иван',
-        'group': 'ПИ-21-1',
-        'grades': {'Математика': 4, 'Физика': 3}
     }
 }
 
 class ScreenManagement(ScreenManager):
     pass
 
-# Основные экраны
 class WelcomeScreen(Screen):
     pass
-
 
 class LoginScreen(Screen):
     login = ObjectProperty(None)
@@ -40,12 +57,13 @@ class LoginScreen(Screen):
 
         if username in temp_users and temp_users[username]['password'] == password:
             print(f"Успешный вход как {username}!")
-            # Обновляем данные текущего пользователя
             app.current_user = temp_users[username]
-            self.manager.current = 'main'
+            if 'group' in temp_users[username]:
+                self.manager.current = 'student_profile'
+            else:
+                self.manager.current = 'teacher_profile'
         else:
             print("Ошибка: Неверный логин или пароль")
-
 
 class RegisterScreen(Screen):
     reg_login = ObjectProperty(None)
@@ -70,29 +88,204 @@ class RegisterScreen(Screen):
         }
         print(f"Пользователь {username} успешно зарегистрирован!")
 
-
-# Новые экраны главного меню
 class MainScreen(Screen):
-    def show_profile(self):
-        self.manager.current = 'profile'
+    def logout(self):
+        app = MDApp.get_running_app()
+        app.current_user = {
+            'name': 'Гость',
+            'group': 'Не указана',
+            'grades': {}
+        }
+        self.manager.current = 'welcome'
 
-    def show_schedule(self):
-        self.manager.current = 'schedule'
+class StudentProfileScreen(Screen):
+    def on_enter(self):
+        app = MDApp.get_running_app()
+        user = app.current_user
+        
+        container = self.ids.student_container
+        container.clear_widgets()
+        
+        
+        container.add_widget(
+            MDLabel(
+                text='Профиль студента',
+                halign='center',
+                font_style='H4',
+                size_hint_y=None,
+                height=dp(50)))
+        
+        
+        avatar = FitImage(
+            source='assets/male-profile.png' if user.get('gender') == 'Мужской' else 'assets/female-profile.png',
+            size_hint=(None, None),
+            size=(dp(150), dp(150)),
+            pos_hint={'center_x': 0.5},
+            radius=[dp(75)],  
+            mipmap=True  
+)
+        container.add_widget(avatar)
+        
+        
+        info_card = MDCard(
+            orientation='vertical',
+            size_hint=(0.9, None),
+            height=dp(400),
+            pos_hint={'center_x': 0.5},
+            padding=[dp(20), dp(25), dp(20), dp(20)],
+            spacing=dp(10),
+            elevation=3,
+            md_bg_color=[1, 1, 1, 1],
+            radius=[15]
+        )
+        
+        student_fields = [
+            ('Тип профиля', 'Студент'),
+            ('ФИО', user.get('name', 'Не указано')),
+            ('Почта', user.get('email', 'Не указано')),
+            ('Телефон', user.get('phone', 'Не указано')),
+            ('Группа', user.get('group', 'Не указана')),
+            ('Дата рождения', user.get('birthDate', 'Не указана')),
+            ('Пол', user.get('gender', 'Не указан'))
+        ]
+        
+        for label, value in student_fields:
+            field_box = MDBoxLayout(
+                orientation='vertical',
+                size_hint_y=None,
+                height=dp(40),
+                spacing=dp(2)
+            )
+            field_box.add_widget(
+                MDLabel(
+                text=label,
+                
+                size_hint_y=None,
+                height=dp(25),  
+                bold=True,      
+                
+    )
+)
+            field_box.add_widget(
+                MDLabel(
+                    text=value,
+                    size_hint_y=None,
+                    height=dp(20)))
+            info_card.add_widget(field_box)
+        
+        container.add_widget(info_card)
+        
+        
+        buttons = [
+            ('На главную', 'main'),
+            ('Расписание', 'schedule'),
+            ('Оценки', 'grades'),
+            ('Выйти', 'welcome')
+        ]
+        
+        for text, screen in buttons:
+            btn = MDRaisedButton(
+                text=text,
+                size_hint=(None, None),
+                size=(dp(200), dp(50)),
+                pos_hint={'center_x': 0.5}
+            )
+            btn.bind(on_press=lambda x, s=screen: setattr(self.manager, 'current', s))
+            container.add_widget(btn)
 
-    def show_grades(self):
-        self.manager.current = 'grades'
-
-class ProfileScreen(Screen):
-    pass
-
-class ScheduleScreen(Screen):
-    pass
-
-class GradesScreen(Screen):
-    pass
-
-class ProfileScreen(Screen):
-    pass
+class TeacherProfileScreen(Screen):
+    def on_enter(self):
+        app = MDApp.get_running_app()
+        user = app.current_user
+        
+        container = self.ids.teacher_container
+        container.clear_widgets()
+        
+        
+        container.add_widget(
+            MDLabel(
+                text='Профиль преподавателя',
+                halign='center',
+                font_style='H4',
+                size_hint_y=None,
+                height=dp(50)))
+        
+        avatar = FitImage(
+            source='assets/male-profile.png' if user.get('gender') == 'Мужской' else 'assets/female-profile.png',
+            size_hint=(None, None),
+            size=(dp(150), dp(150)),
+            pos_hint={'center_x': 0.5},
+            radius=[dp(75)],  
+            mipmap=True  
+        )
+        container.add_widget(avatar)
+        
+        
+        info_card = MDCard(
+            orientation='vertical',
+            size_hint=(0.9, None),
+            height=dp(450),
+            pos_hint={'center_x': 0.5},
+            padding=[dp(20), dp(25), dp(20), dp(20)],
+            spacing=dp(10),
+            elevation=3,
+            md_bg_color=[1, 1, 1, 1],
+            radius=[15]
+        )
+        
+        teacher_fields = [
+            ('Тип профиля', 'Преподаватель'),
+            ('ФИО', user.get('name', 'Не указано')),
+            ('Почта', user.get('email', 'Не указано')),
+            ('Телефон', user.get('phone', 'Не указано')),
+            ('Кафедра', user.get('department', 'Не указана')),
+            ('Дата рождения', user.get('birthDate', 'Не указана')),
+            ('Пол', user.get('gender', 'Не указан')),
+            ('Преподаваемые предметы', ', '.join(user.get('subjects', [])))
+        ]
+        
+        for label, value in teacher_fields:
+            field_box = MDBoxLayout(
+                orientation='vertical',
+                size_hint_y=None,
+                height=dp(40),
+                spacing=dp(2)
+            )
+            field_box.add_widget(
+                MDLabel(
+                text=label,
+                
+                size_hint_y=None,
+                height=dp(25),
+                bold=True,
+                
+    )
+)
+            field_box.add_widget(
+                MDLabel(
+                    text=value,
+                    size_hint_y=None,
+                    height=dp(20)))
+            info_card.add_widget(field_box)
+        
+        container.add_widget(info_card)
+        
+        
+        buttons = [
+            ('На главную', 'main'),
+            ('Расписание', 'schedule'),
+            ('Выйти', 'welcome')
+        ]
+        
+        for text, screen in buttons:
+            btn = MDRaisedButton(
+                text=text,
+                size_hint=(None, None),
+                size=(dp(200), dp(50)),
+                pos_hint={'center_x': 0.5}
+            )
+            btn.bind(on_press=lambda x, s=screen: setattr(self.manager, 'current', s))
+            container.add_widget(btn)
 
 class ScheduleScreen(Screen):
     pass
@@ -110,8 +303,10 @@ Builder.load_string('''
         name: 'register'
     MainScreen:
         name: 'main'
-    ProfileScreen:
-        name: 'profile'
+    StudentProfileScreen:
+        name: 'student_profile'
+    TeacherProfileScreen:
+        name: 'teacher_profile'
     ScheduleScreen:
         name: 'schedule'
     GradesScreen:
@@ -217,46 +412,48 @@ Builder.load_string('''
 
         MDRaisedButton:
             text: 'Личный кабинет'
-            on_press: root.show_profile()
+            on_press: 
+                root.manager.current = 'student_profile' if 'group' in app.current_user else 'teacher_profile'
             icon: 'account'
             size_hint_y: 0.2
 
         MDRaisedButton:
             text: 'Расписание занятий'
-            on_press: root.show_schedule()
+            on_press: root.manager.current = 'schedule'
             icon: 'calendar'
             size_hint_y: 0.2
 
         MDRaisedButton:
             text: 'Зачётная книжка'
-            on_press: root.show_grades()
+            on_press: root.manager.current = 'grades'
             icon: 'book-open'
             size_hint_y: 0.2
+            disabled: 'group' not in app.current_user
 
         MDRectangleFlatButton:
             text: 'Выйти из системы'
-            on_press: root.manager.current = 'welcome'
+            on_press: root.logout()
             size_hint_y: 0.2
 
-<ProfileScreen>:
-    BoxLayout:
-        orientation: 'vertical'
-        padding: 20
-        
-        MDLabel:
-            text: 'Личный кабинет'
-            halign: 'center'
-            font_style: 'H4'
-        
-        MDLabel:
-            text: f"Пользователь: {app.current_user['name']}"
-        
-        MDLabel:
-            text: f"Группа: {app.current_user['group']}"
-        
-        MDRectangleFlatButton:
-            text: 'Назад'
-            on_press: root.manager.current = 'main'
+<StudentProfileScreen>:
+    ScrollView:
+        BoxLayout:
+            id: student_container
+            orientation: 'vertical'
+            padding: dp(20)
+            spacing: dp(20)
+            size_hint_y: None
+            height: self.minimum_height
+
+<TeacherProfileScreen>:
+    ScrollView:
+        BoxLayout:
+            id: teacher_container
+            orientation: 'vertical'
+            padding: dp(20)
+            spacing: dp(20)
+            size_hint_y: None
+            height: self.minimum_height
 
 <ScheduleScreen>:
     BoxLayout:
@@ -301,13 +498,12 @@ Builder.load_string('''
             on_press: root.manager.current = 'main'
 ''')
 
-
 class DigitalHelperApp(MDApp):
-    current_user = DictProperty()  # Теперь current_user - свойство приложения
+    current_user = DictProperty()
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
-        self.current_user = {  # Инициализируем здесь
+        self.current_user = {
             'name': 'Гость',
             'group': 'Не указана',
             'grades': {}
@@ -315,4 +511,4 @@ class DigitalHelperApp(MDApp):
         return ScreenManagement()
 
 if __name__ == '__main__':
-    DigitalHelperApp().run()
+    DigitalHelperApp().run() 
