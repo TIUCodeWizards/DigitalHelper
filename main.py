@@ -19,9 +19,10 @@ temp_users = {
         'phone': '+79991234567',
         'birthDate': '01.01.2000',
         'gender': 'Мужской',
-        'grades': {'Математика': 4, 'Физика': 3}
+        'grades': {'Математика': 4, 'Физика': 3},
+        'role': 'student'  
     },
-    'teacher': {
+     'teacher': {
         'password': 'teacher123',
         'email': 'teacher@university.com',
         'name': 'Петрова Мария',
@@ -29,14 +30,16 @@ temp_users = {
         'phone': '+79998765432',
         'birthDate': '15.05.1985',
         'gender': 'Женский',
-        'subjects': ['Математика', 'Программирование']
+        'subjects': ['Математика', 'Программирование'],
+        'role': 'teacher'  
     },
     'admin': {
         'password': 'admin123',
         'email': 'admin@university.com',
         'name': 'Администратор',
         'group': 'ADM-01',
-        'grades': {'Математика': 5, 'Физика': 5}
+        'grades': {'Математика': 5, 'Физика': 5},
+        'role': 'admin'  
     }
 }
 
@@ -58,10 +61,7 @@ class LoginScreen(Screen):
         if username in temp_users and temp_users[username]['password'] == password:
             print(f"Успешный вход как {username}!")
             app.current_user = temp_users[username]
-            if 'group' in temp_users[username]:
-                self.manager.current = 'student_profile'
-            else:
-                self.manager.current = 'teacher_profile'
+            self.manager.current = 'main'
         else:
             print("Ошибка: Неверный логин или пароль")
 
@@ -413,7 +413,7 @@ Builder.load_string('''
         MDRaisedButton:
             text: 'Личный кабинет'
             on_press: 
-                root.manager.current = 'student_profile' if 'group' in app.current_user else 'teacher_profile'
+                root.manager.current = 'student_profile' if app.current_user.get('role') == 'student' else 'teacher_profile'
             icon: 'account'
             size_hint_y: 0.2
 
